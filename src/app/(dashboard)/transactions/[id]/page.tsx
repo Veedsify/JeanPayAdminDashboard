@@ -5,7 +5,7 @@ import Link from "next/link";
 
 const TransactionDetails = () => {
   return (
-    <DashboardLayout>
+    <>
       <div
         className="
         flex justify-between items-center mb-4
@@ -202,7 +202,7 @@ const TransactionDetails = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Phone, Home, User } from "lucide-react";
+import { Phone, Home, User } from "lucide-react";
 import React from "react";
 
 const AccountDetailsCard = () => {

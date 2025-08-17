@@ -31,7 +31,7 @@ const UsersPage = () => {
   });
 
   return (
-    <DashboardLayout>
+    <>
       {/* Main Content Card */}
       <div className="">
         {/* Top Controls: Search, Filters, and Actions */}
@@ -228,7 +228,7 @@ const UsersPage = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

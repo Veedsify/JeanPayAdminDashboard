@@ -14,7 +14,6 @@ export default function Dashboard() {
   const stats = useDashboardStore((state) => state.stats);
 
   return (
-    <DashboardLayout>
       <div className="grid grid-cols-4 gap-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-2 col-span-full md:col-span-4 lg:col-span-3 gap-4">
@@ -68,6 +67,5 @@ export default function Dashboard() {
           <RecentTransactions />
         </div>
       </div>
-    </DashboardLayout>
   );
 }

@@ -101,7 +101,13 @@ export function Sidebar({
         <div className="p-[22px] border-b border-gray-200 flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center space-x-2">
-              <Image src={"/images/logo.png"} height={48} width={48} alt="logo" className="w-10 h-10 "/>
+              <Image
+                src={"/images/logo.png"}
+                height={48}
+                width={48}
+                alt="logo"
+                className="w-10 h-10 "
+              />
               <span className="font-bold text-gray-900">
                 <span className="text-secondary">Jean</span>
                 <span className="text-primary italic">Pay</span>

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 // import { Instrument_Sans } from "next/font/google";
-import "./globals.css";
+import "../globals.css";
 import { Providers } from "@/components/providers/Providers";
 import "@fontsource-variable/host-grotesk";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 // const font = Instrument_Sans({
 //   subsets: ["latin"],
@@ -22,7 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${"font.className"} font-sans antialiased bg-gray-50`}>
-        <Providers>{children}</Providers>
+        <DashboardLayout>
+          <Providers>{children}</Providers>
+        </DashboardLayout>
       </body>
     </html>
   );

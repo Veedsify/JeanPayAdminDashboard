@@ -5,7 +5,7 @@ import TransactionsTable from "@/components/transactions/TransactionsTable";
 
 const TransactionsPage = () => {
   return (
-    <DashboardLayout>
+    <>
       {/* <h1 className="text-3xl font-bold text-gray-800 mb-8">Transactions</h1> */}
       <TransactionsStats />
       <div className="space-y-6">
@@ -14,7 +14,7 @@ const TransactionsPage = () => {
           <TransactionsTable />
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 
