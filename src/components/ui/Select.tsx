@@ -13,7 +13,23 @@ interface SelectContextType {
 
 const SelectContext = React.createContext<SelectContextType | undefined>(
   undefined
+); 
+export const SelectBox = ({
+  children,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & {
+  children: React.ReactNode;
+}) => (
+  <div className="relative">
+    <select
+      className="h-10 w-full appearance-none rounded-md border border-input bg-background pl-3 pr-8 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      {...props}
+    >
+      {children}
+    </select>
+  </div>
 );
+
 
 const useSelectContext = () => {
   const context = React.useContext(SelectContext);

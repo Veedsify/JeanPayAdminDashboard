@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
 
-const UserCard = () => {
+const UserCard = ({ name }: { name?: string }) => {
   const user = {
-    name: "Anahera Jones",
+    name,
     avatarColor: "bg-[#005B58]",
   };
 

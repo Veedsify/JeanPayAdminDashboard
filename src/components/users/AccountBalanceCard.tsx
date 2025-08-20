@@ -1,20 +1,18 @@
 "use client";
 
-import { CircleDollarSign, MoreHorizontal } from "lucide-react";
+import { GetCurrencySymbol } from "@/lib/utils";
+import { WalletDetailsPage } from "@/types/admin-users";
+import { CircleDollarSign } from "lucide-react";
 import React from "react";
 
-const AccountBalanceCard = () => {
-  const balances = {
-    ngn: {
-      amount: "3,927,002",
-      currency: "NGN",
-    },
-    ghs: {
-      amount: "7,899",
-      currency: "GHS",
-    },
-  };
+type AccountBalanceCardProps = {
+  wallet: WalletDetailsPage | undefined | null;
+};
 
+const AccountBalanceCard = ({ wallet }: AccountBalanceCardProps) => {
+  if (!wallet) {
+    return <div className="text-gray-500">No wallet data available</div>;
+  }
   return (
     <div className="bg-white p-6 rounded-2xl">
       <div className="flex justify-between items-center mb-6">
@@ -32,8 +30,10 @@ const AccountBalanceCard = () => {
             </div>
           </div>
           <p className="text-2xl font-bold mt-2">
-            {balances.ngn.amount}{" "}
-            <span className="text-sm font-medium">{balances.ngn.currency}</span>
+            <span className="text-sm font-medium">
+              {GetCurrencySymbol("NGN")}
+            </span>
+            {wallet.balance_ngn.toLocaleString()}
           </p>
         </div>
 
@@ -48,8 +48,10 @@ const AccountBalanceCard = () => {
             </div>
           </div>
           <p className="text-2xl font-bold mt-2">
-            {balances.ghs.amount}{" "}
-            <span className="text-sm font-medium">{balances.ghs.currency}</span>
+            <span className="text-sm font-medium">
+              {GetCurrencySymbol("GHS")}
+            </span>
+            {wallet.balance_ghs.toLocaleString()}
           </p>
         </div>
       </div>
