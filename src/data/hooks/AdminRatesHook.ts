@@ -20,7 +20,7 @@ export function useRatesInfiniteQuery(params?: RateQueryParams) {
 }
 
 // Separate hook for regular rates query
-export function useRatesQuery(params?: RateQueryParams) {
+function useRatesQuery(params?: RateQueryParams) {
   return useQuery({
     queryKey: ["admin", "rates", "paginated", params],
     queryFn: () => getAllRates(params),
@@ -29,7 +29,7 @@ export function useRatesQuery(params?: RateQueryParams) {
 }
 
 // Separate hook for rate history
-export function useRateHistoryQuery(params?: RateQueryParams) {
+function useRateHistoryQuery(params?: RateQueryParams) {
   return useQuery({
     queryKey: ["admin", "rates", "history", params],
     queryFn: () => getRateHistory(params),
@@ -38,7 +38,7 @@ export function useRateHistoryQuery(params?: RateQueryParams) {
 }
 
 // Separate hook for current rate
-export function useCurrentRateQuery(fromCurrency: string, toCurrency: string) {
+function useCurrentRateQuery(fromCurrency: string, toCurrency: string) {
   return useQuery({
     queryKey: ["admin", "rates", "current", fromCurrency, toCurrency],
     queryFn: () => getCurrentRate(fromCurrency, toCurrency),

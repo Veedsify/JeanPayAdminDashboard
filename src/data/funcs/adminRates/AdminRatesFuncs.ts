@@ -46,7 +46,7 @@ export {
   getAllRates,
   getRateHistory,
   addRate,
-  updateRate,
-  deleteRate,
+  
+  
   getCurrentRate,
 };

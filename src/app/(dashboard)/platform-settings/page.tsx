@@ -1,6 +1,5 @@
 "use client";
-
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { changeAdminPassword } from "@/data/funcs/adminSettings/AdminSettingsFuncs";
 import { Button } from "@/components/ui/Button";
 import { SearchInput } from "@/components/ui/SearchInput";
 import {
@@ -11,11 +10,127 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
+import { ToggleSwitch } from "@/components/settings/ToggleSwitch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { AnimatePresence } from "framer-motion";
-import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import useAdminSettings, {
+  usePlatformSettingsQuery,
+} from "@/data/hooks/AdminSettingsHook";
+import toast from "react-hot-toast";
 
 const PlatformSettingsPage = () => {
+  const { data } = usePlatformSettingsQuery();
+  const { updateSettings } = useAdminSettings();
+
+  const [kycEnforcement, setKycEnforcement] = useState<boolean>(false);
+  const [manualRateOverride, setManualRateOverride] = useState<boolean>(false);
+  const [transactionEmails, setTransactionEmails] = useState<boolean>(false);
+  const [defaultCurrency, setDefaultCurrency] = useState<string>("NGN");
+  const [minimumTransaction, setMinimumTransaction] = useState<
+    number | undefined
+  >(undefined);
+  const [maximumTransaction, setMaximumTransaction] = useState<
+    number | undefined
+  >(undefined);
+  const [dailyUserCap, setDailyUserCap] = useState<number | undefined>(
+    undefined,
+  );
+  // theme, notifications and security
+  const [theme, setTheme] = useState<string>("light");
+  const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
+  const [smsNotifications, setSmsNotifications] = useState<boolean>(false);
+  const [pushNotifications, setPushNotifications] = useState<boolean>(true);
+  const [enforceTwoFactor, setEnforceTwoFactor] = useState<boolean>(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState<string>("");
+  const [newPasswordInput, setNewPasswordInput] = useState<string>("");
+  const [sendTransactionSuccess, setSendTransactionSuccess] =
+    useState<boolean>(true);
+  const [sendTransactionDecline, setSendTransactionDecline] =
+    useState<boolean>(true);
+  const [sendTransactionPending, setSendTransactionPending] =
+    useState<boolean>(true);
+  const [sendTransactionRefund, setSendTransactionRefund] =
+    useState<boolean>(true);
+  const [accountLimitsNotification, setAccountLimitsNotification] =
+    useState<boolean>(true);
+
+  useEffect(() => {
+    const s =
+      (data as { data?: Record<string, unknown> } | undefined)?.data ?? {};
+    if (s) {
+      setKycEnforcement(!!s.kycEnforcement);
+      setManualRateOverride(!!s.manualRateOverride);
+      setTransactionEmails(!!s.transactionEmails);
+      setDefaultCurrency((s.defaultCurrency as string) || "NGN");
+      setMinimumTransaction((s.minimumTransaction as number) || undefined);
+      setMaximumTransaction((s.maximumTransaction as number) || undefined);
+      setDailyUserCap((s.dailyUserCap as number) || undefined);
+      // theme/notifications/security
+      setTheme((s.theme as string) || "light");
+      setEmailNotifications(!!s.emailNotifications);
+      setSmsNotifications(!!s.smsNotifications);
+      setPushNotifications(!!s.pushNotifications);
+      setEnforceTwoFactor(!!s.enforceTwoFactor);
+      setSendTransactionSuccess(!!s.sendTransactionSuccess);
+      setSendTransactionDecline(!!s.sendTransactionDecline);
+      setSendTransactionPending(!!s.sendTransactionPending);
+      setSendTransactionRefund(!!s.sendTransactionRefund);
+      setAccountLimitsNotification(!!s.accountLimitsNotification);
+    }
+  }, [data]);
+
+  const handleSave = async () => {
+    await updateSettings.mutateAsync(
+      {
+        kycEnforcement,
+        manualRateOverride,
+        defaultCurrency,
+        transactionEmails,
+        minimumTransaction,
+        maximumTransaction,
+        dailyUserCap,
+        theme,
+        emailNotifications,
+        smsNotifications,
+        pushNotifications,
+        enforceTwoFactor,
+        sendTransactionSuccess,
+        sendTransactionDecline,
+        sendTransactionPending,
+        sendTransactionRefund,
+        accountLimitsNotification,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Settings updated successfully!");
+        },
+        onError: (error) => {
+          // Handle error case
+          toast.error("Failed to update settings. Please try again.");
+          console.error("Failed to update settings:", error);
+        },
+      },
+    );
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      await changeAdminPassword({
+        currentPassword: currentPasswordInput,
+        newPassword: newPasswordInput,
+      });
+      toast.success("Password changed successfully");
+      setShowPasswordModal(false);
+      setCurrentPasswordInput("");
+      setNewPasswordInput("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to change password");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Tabs defaultValue="general">
@@ -52,31 +167,46 @@ const PlatformSettingsPage = () => {
                   title="KYC Enforcement"
                   description="Enforce KYC verification for all new users."
                 >
-                  <Switch id="kyc-enforcement" />
+                  <Switch
+                    id="kyc-enforcement"
+                    checked={kycEnforcement}
+                    onCheckedChange={(v) => setKycEnforcement(!!v)}
+                  />
                 </SettingsRow>
                 <SettingsRow
                   title="Manual Rate Override"
                   description="Allow admins to manually set exchange rates."
                 >
-                  <Switch id="manual-rate-override" defaultChecked />
+                  <Switch
+                    id="manual-rate-override"
+                    checked={manualRateOverride}
+                    onCheckedChange={(v) => setManualRateOverride(!!v)}
+                  />
                 </SettingsRow>
                 <SettingsRow
                   title="Transaction Confirmation Emails"
                   description="Send email confirmations after each transaction."
                 >
-                  <Switch checked={true} id="transaction-emails" />
+                  <Switch
+                    checked={transactionEmails}
+                    id="transaction-emails"
+                    onCheckedChange={(v) => setTransactionEmails(!!v)}
+                  />
                 </SettingsRow>
                 <SettingsRow
                   title="Default Currency Display"
                   description="Select the default platform currency."
                 >
-                  <Select>
+                  <Select
+                    onValueChange={(v) => setDefaultCurrency(v.toUpperCase())}
+                    value={defaultCurrency}
+                  >
                     <SelectTrigger className="w-full md:w-[250px]">
                       <SelectValue placeholder="Select Currency" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ngn">(NGN) Nigerian Naira</SelectItem>
-                      <SelectItem value="ghs">(GHS) Ghana Cedis</SelectItem>
+                      <SelectItem value="NGN">(NGN) Nigerian Naira</SelectItem>
+                      <SelectItem value="GHS">(GHS) Ghana Cedis</SelectItem>
                     </SelectContent>
                   </Select>
                 </SettingsRow>
@@ -95,21 +225,63 @@ const PlatformSettingsPage = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <LimitInput
-                  label="Minimum Transaction"
-                  placeholder="e.g. 100"
-                  description="Minimum amount per transaction (in NGN)."
-                />
-                <LimitInput
-                  label="Maximum Transaction"
-                  placeholder="e.g. 1,000,000"
-                  description="Maximum amount per transaction (in NGN)."
-                />
-                <LimitInput
-                  label="Daily User Cap"
-                  placeholder="e.g. 5,000,000"
-                  description="Maximum daily total for a single user (in NGN)."
-                />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Minimum Transaction
+                  </label>
+                  <input
+                    type="number"
+                    value={minimumTransaction ?? ""}
+                    onChange={(e) =>
+                      setMinimumTransaction(
+                        e.target.value ? Number(e.target.value) : undefined,
+                      )
+                    }
+                    placeholder="e.g. 100"
+                    className="w-full px-3 py-2.5 border border-gray-200/80 rounded-lg bg-primary-green-50/50 focus:ring-primary-green-600 focus:border-primary-green-600"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Minimum amount per transaction (in NGN).
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Maximum Transaction
+                  </label>
+                  <input
+                    type="number"
+                    value={maximumTransaction ?? ""}
+                    onChange={(e) =>
+                      setMaximumTransaction(
+                        e.target.value ? Number(e.target.value) : undefined,
+                      )
+                    }
+                    placeholder="e.g. 1,000,000"
+                    className="w-full px-3 py-2.5 border border-gray-200/80 rounded-lg bg-primary-green-50/50 focus:ring-primary-green-600 focus:border-primary-green-600"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Maximum amount per transaction (in NGN).
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Daily User Cap
+                  </label>
+                  <input
+                    type="number"
+                    value={dailyUserCap ?? ""}
+                    onChange={(e) =>
+                      setDailyUserCap(
+                        e.target.value ? Number(e.target.value) : undefined,
+                      )
+                    }
+                    placeholder="e.g. 5,000,000"
+                    className="w-full px-3 py-2.5 border border-gray-200/80 rounded-lg bg-primary-green-50/50 focus:ring-primary-green-600 focus:border-primary-green-600"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Maximum daily total for a single user (in NGN).
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -119,8 +291,11 @@ const PlatformSettingsPage = () => {
               <Button
                 variant={"default"}
                 className="bg-secondary cursor-pointer hover:bg-secondary/90"
+                onClick={handleSave}
               >
-                Save Changes
+                {updateSettings?.status === "pending"
+                  ? "Saving..."
+                  : "Save Changes"}
               </Button>
             </div>
           </div>
@@ -145,7 +320,10 @@ const PlatformSettingsPage = () => {
                     <span className="text-sm font-medium text-gray-600">
                       Light
                     </span>
-                    <Switch id="interface-theme" />
+                    <ToggleSwitch
+                      enabled={theme === "light"}
+                      onChange={(v) => setTheme(v ? "light" : "dark")}
+                    />
                     <span className="text-sm font-medium text-gray-600">
                       Dark
                     </span>
@@ -153,16 +331,17 @@ const PlatformSettingsPage = () => {
                 </SettingsRow>
                 <SettingsRow title="Chart Style">
                   <div className="flex items-center gap-4">
-                    <Select>
-                      <SelectTrigger className="w-full md:w-[200px]">
-                        <SelectValue placeholder="Line Chart" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="line">Line Chart</SelectItem>
-                        <SelectItem value="bar">Bar Chart</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Switch id="chart-style" />
+                    <select
+                      className="w-3xs py-2.5 px-2 border border-black/30 rounded-xl active:shadow"
+                      name="chart-type"
+                      id=""
+                    >
+                      <option value="">Select Chart Type</option>
+                      <option value="line">Line Chart</option>
+                      <option value="bar">Bar Chart</option>
+                      <option value="area">Area Chart</option>
+                      <option value="pie">Pie Chart</option>
+                    </select>
                   </div>
                 </SettingsRow>
               </div>
@@ -196,22 +375,34 @@ const PlatformSettingsPage = () => {
                   title="Transaction Successful"
                   description="Send users a transaction successful notification"
                 >
-                  <Switch id="transaction-successful" />
+                  <ToggleSwitch
+                    enabled={sendTransactionSuccess}
+                    onChange={setSendTransactionSuccess}
+                  />
                 </SettingsRow>
                 <SettingsRow
                   title="Transactions Declined"
                   description="Send users a transactions declined notification"
                 >
-                  <Switch id="transaction-declined" />
+                  <ToggleSwitch
+                    enabled={sendTransactionDecline}
+                    onChange={setSendTransactionDecline}
+                  />
                 </SettingsRow>
                 <SettingsRow
                   title="Refunded Notifications"
                   description="Send users a refunded notification when a transaction gets refunded"
                 >
-                  <Switch id="refunded-notifications" />
+                  <ToggleSwitch
+                    enabled={sendTransactionRefund}
+                    onChange={setSendTransactionRefund}
+                  />
                 </SettingsRow>
                 <SettingsRow title="Account Limits Notifications">
-                  <Switch id="account-limits" />
+                  <ToggleSwitch
+                    enabled={accountLimitsNotification}
+                    onChange={setAccountLimitsNotification}
+                  />
                 </SettingsRow>
               </div>
             </div>
@@ -224,8 +415,11 @@ const PlatformSettingsPage = () => {
               <Button
                 variant={"default"}
                 className="bg-secondary cursor-pointer hover:bg-secondary/90"
+                onClick={handleSave}
               >
-                Save Changes
+                {updateSettings?.status === "pending"
+                  ? "Saving..."
+                  : "Save Changes"}
               </Button>
             </div>
           </div>
@@ -250,20 +444,109 @@ const PlatformSettingsPage = () => {
                     variant="default"
                     size={"sm"}
                     className="bg-secondary hover:bg-secondary/80 text-white"
+                    onClick={() => setShowPasswordModal(true)}
                   >
-                    Reset Password
+                    Change Password
                   </Button>
                 </SettingsRow>
                 <SettingsRow
                   title="Two factor authentication"
                   description="Add an extra layer of security to your account"
                 >
-                  <Switch id="two-factor-auth" />
+                  <div>
+                    <Switch
+                      id="two-factor-auth"
+                      checked={enforceTwoFactor}
+                      onCheckedChange={async (v) => {
+                        const newVal = !!v;
+                        setEnforceTwoFactor(newVal);
+                      }}
+                    />
+                  </div>
                 </SettingsRow>
               </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end items-center gap-4 pt-6 border-t border-gray-100">
+              <Button variant="outline">Cancel</Button>
+              <Button
+                variant={"default"}
+                className="bg-secondary cursor-pointer hover:bg-secondary/90"
+                onClick={handleSave}
+              >
+                {updateSettings?.status === "pending"
+                  ? "Saving..."
+                  : "Save Changes"}
+              </Button>
+            </div>
           </div>
         </TabsContent>
+
+        <AnimatePresence>
+          {showPasswordModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center"
+            >
+              <div
+                className="absolute inset-0 bg-black/40"
+                onClick={() => setShowPasswordModal(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="relative bg-white rounded-lg p-6 w-full max-w-md z-10"
+              >
+                <h3 className="text-lg font-semibold mb-4">
+                  Change Admin Password
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm mb-1 inline-block">
+                      Current Password
+                    </label>
+                    <input
+                      type="password"
+                      value={currentPasswordInput}
+                      onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/30 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm mb-1 inline-block">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={newPasswordInput}
+                      onChange={(e) => setNewPasswordInput(e.target.value)}
+                      className="w-full px-3 py-2 border border-black/30 rounded-lg"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPasswordModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="default"
+                    className="bg-secondary"
+                    onClick={handleChangePassword}
+                  >
+                    Change Password
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Tabs>
     </div>
   );
@@ -287,27 +570,6 @@ const SettingsRow = ({
       )}
     </div>
     <div className="flex-shrink-0">{children}</div>
-  </div>
-);
-
-// Helper component for limit inputs
-const LimitInput = ({
-  label,
-  placeholder,
-  description,
-}: {
-  label: string;
-  placeholder: string;
-  description: string;
-}) => (
-  <div className="space-y-2">
-    <label className="text-sm font-medium text-gray-700">{label}</label>
-    <input
-      type="text"
-      placeholder={placeholder}
-      className="w-full px-3 py-2.5 border border-gray-200/80 rounded-lg bg-primary-green-50/50 focus:ring-primary-green-600 focus:border-primary-green-600"
-    />
-    <p className="text-xs text-gray-500">{description}</p>
   </div>
 );
 

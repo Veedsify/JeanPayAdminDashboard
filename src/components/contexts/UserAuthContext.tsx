@@ -13,7 +13,7 @@ import {
 } from "react";
 
 // User type definition
-export interface User {
+interface User {
   id: string;
   email: string;
   first_name: string;
@@ -35,7 +35,7 @@ export interface User {
 }
 
 // Authentication state type
-export interface AuthState {
+interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -43,7 +43,7 @@ export interface AuthState {
 }
 
 // Authentication context type
-export interface AuthContextType extends AuthState {
+interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
   clearError: () => void;
@@ -51,7 +51,7 @@ export interface AuthContextType extends AuthState {
 }
 
 // Registration data type
-export interface RegisterData {
+interface RegisterData {
   email: string;
   password: string;
   firstName: string;
@@ -258,4 +258,4 @@ export const useAuthContext = () => {
 };
 
 // Export the context for advanced use cases
-export { AuthContext };
+;

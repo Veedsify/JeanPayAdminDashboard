@@ -91,7 +91,7 @@ export default function useAdminUsers() {
   ) {
     return useQuery({
       queryKey: ["admin", "users", userId, "transactions", params],
-      queryFn: () => getUserTransactions(userId, params),
+      queryFn: () => getUserTransactions(userId),
       enabled: !!userId,
       staleTime: 2 * 60 * 1000,
     });

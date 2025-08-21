@@ -41,7 +41,7 @@ const Input = React.forwardRef<
   <input
     className={cn(
       "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-      className
+      className,
     )}
     ref={ref}
     {...props}
@@ -79,7 +79,7 @@ const StatusBadge = React.memo(
         {status}
       </div>
     );
-  }
+  },
 );
 StatusBadge.displayName = "StatusBadge";
 
@@ -126,15 +126,11 @@ const NewRateModal = React.memo(({ onClose }: { onClose: () => void }) => {
       const { name, value } = e.target;
       setData((prev) => ({
         ...prev,
-        [name]:
-          name === "rate"
-            ? isNaN(Number(value))
-              ? value
-              : Number(value)
-            : value,
+        [name]: name === "rate" ? Number(value) : value,
       }));
+      console.log(data);
     },
-    []
+    [data],
   );
 
   const handleSubmit = useCallback(
@@ -165,12 +161,12 @@ const NewRateModal = React.memo(({ onClose }: { onClose: () => void }) => {
         setError("An unexpected error occurred");
       }
     },
-    [data, addRate, onClose]
+    [data, addRate, onClose],
   );
 
   const availableToCurrencies = useMemo(
     () => CURRENCIES.filter((currency) => currency.code !== data.from_currency),
-    [data.from_currency]
+    [data.from_currency],
   );
 
   const ratePreview = useMemo(() => {
@@ -180,7 +176,7 @@ const NewRateModal = React.memo(({ onClose }: { onClose: () => void }) => {
     if (isNaN(rate)) return null;
 
     return `${GetCurrencySymbol(data.from_currency)} 1 = ${GetCurrencySymbol(
-      data.to_currency
+      data.to_currency,
     )} ${rate.toLocaleString(undefined, {
       minimumFractionDigits: 5,
       maximumFractionDigits: 8,
@@ -225,11 +221,10 @@ const NewRateModal = React.memo(({ onClose }: { onClose: () => void }) => {
               id="from_currency"
               name="from_currency"
               onChange={handleInputChange}
-              value={data.from_currency || ""}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
               required
             >
-              <option value="">Select From Currency</option>
+              <option>Select From Currency</option>
               {CURRENCIES.map((currency) => (
                 <option key={currency.code} value={currency.code}>
                   {currency.name}
@@ -249,11 +244,10 @@ const NewRateModal = React.memo(({ onClose }: { onClose: () => void }) => {
               id="to_currency"
               name="to_currency"
               onChange={handleInputChange}
-              value={data.to_currency || ""}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
               required
             >
-              <option value="">Select To Currency</option>
+              <option>Select To Currency</option>
               {availableToCurrencies.map((currency) => (
                 <option key={currency.code} value={currency.code}>
                   {currency.name}
@@ -270,14 +264,13 @@ const NewRateModal = React.memo(({ onClose }: { onClose: () => void }) => {
               Rate
             </label>
             <input
-              type="number"
+              type="text"
               id="rate"
               name="rate"
               onChange={handleInputChange}
-              value={data.rate || ""}
+              defaultValue={data.rate || ""}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
               placeholder="Enter new rate"
-              step="any"
               required
             />
           </div>
@@ -325,22 +318,28 @@ export default function RatesPage() {
 
   const debouncedSearchChange = useMemo(
     () => debounce((value: string) => setSearch(value), 300),
-    []
+    [],
   );
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       debouncedSearchChange(e.target.value);
     },
-    [debouncedSearchChange]
+    [debouncedSearchChange],
   );
 
   const handleAddRateModalToggle = useCallback(() => {
     setAddRateModalOpen((prev) => !prev);
   }, []);
 
-  const { platformRate, ratesData } = useMemo(() => {
-    const firstRate = data?.pages?.[0]?.data?.[0] || null;
+  const { ngnRate, ghsRate, ratesData } = useMemo(() => {
+    const ngn_rate = data?.pages[0]?.data?.find(
+      (rate) => rate.from_currency === "NGN" && rate.to_currency === "GHS",
+    );
+    const ghs_rate = data?.pages[0]?.data?.find(
+      (rate) => rate.from_currency === "GHS" && rate.to_currency === "NGN",
+    );
+
     const rates =
       data?.pages.flatMap((page) =>
         page?.data?.map((rate) => ({
@@ -349,10 +348,10 @@ export default function RatesPage() {
           date: rate.created_at,
           direction: `${rate.from_currency} to ${rate.to_currency}`,
           status: rate.active ? "Active" : "Inactive",
-        }))
+        })),
       ) || [];
 
-    return { platformRate: firstRate, ratesData: rates };
+    return { ghsRate: ghs_rate, ngnRate: ngn_rate, ratesData: rates };
   }, [data]);
 
   const formatRate = useCallback((rate: number) => {
@@ -386,26 +385,35 @@ export default function RatesPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <Card className="rounded-2xl bg-secondary text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-light">API Based Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1 NGN = GHS 0.0068</div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl bg-[#F97316] text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-light">
-              Last Added Rate
-            </CardTitle>
+            <CardTitle className="text-sm font-light">GHS Rate</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="animate-pulse w-[250px] h-7 rounded-lg bg-orange-50/50" />
-            ) : platformRate ? (
+            ) : ghsRate ? (
               <div className="text-2xl font-bold">
-                1 {platformRate.from_currency} = {platformRate.to_currency}{" "}
-                {formatRate(platformRate.rate)}
+                1 {ghsRate.from_currency} = {ghsRate.to_currency}{" "}
+                {formatRate(ghsRate.rate)}
+              </div>
+            ) : (
+              <div className="text-2xl font-bold text-orange-200">
+                No rates available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl bg-primary text-white">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-light">NGN Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="animate-pulse w-[250px] h-7 rounded-lg bg-orange-50/50" />
+            ) : ngnRate ? (
+              <div className="text-2xl font-bold">
+                1 {ngnRate.from_currency} = {ngnRate.to_currency}{" "}
+                {formatRate(ngnRate.rate)}
               </div>
             ) : (
               <div className="text-2xl font-bold text-orange-200">
@@ -438,7 +446,7 @@ export default function RatesPage() {
 
             <Button
               onClick={handleAddRateModalToggle}
-              className="bg-[#0A4F49] hover:bg-[#083b36] text-white w-full sm:w-auto rounded-full"
+              className="bg-secondary hover:bg-secondary/30 text-white w-full sm:w-auto rounded-full"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Rate
