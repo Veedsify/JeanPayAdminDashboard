@@ -1,25 +1,86 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { useDashboardStore } from "@/store/dashboard";
+import { useMemo, useState } from "react";
+import useAdminDashboard from "@/data/hooks/AdminDashboardHook";
 
-export function TransactionOverview() {
-  const stats = useDashboardStore((state) => state.stats);
+interface TransactionOverviewProps {
+  pendingTransactions: number;
+  completedTransactions: number;
+  failedTransactions: number;
+}
+
+export function TransactionOverview({
+  pendingTransactions,
+  completedTransactions,
+  failedTransactions,
+}: TransactionOverviewProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    "Monthly" | "Weekly" | "Daily"
+  >("Monthly");
+  const { getDashboardOverview } = useAdminDashboard();
+
+  const formatDate = (d: Date) => d.toISOString().slice(0, 10);
+
+  const params = useMemo(() => {
+    const now = new Date();
+    let from = new Date();
+    let to = new Date();
+
+    if (selectedPeriod === "Daily") {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (selectedPeriod === "Weekly") {
+      const tmp = new Date(now);
+      tmp.setDate(now.getDate() - 6);
+      from = new Date(tmp.getFullYear(), tmp.getMonth(), tmp.getDate());
+      to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else {
+      // Monthly
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+      to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    return { from_date: formatDate(from), to_date: formatDate(to) };
+  }, [selectedPeriod]);
+
+  const overviewQuery = getDashboardOverview(params);
+  const summary = (overviewQuery.data as any)?.data?.summary;
+
+  const effectiveCompleted =
+    typeof summary?.completedTransactions === "number"
+      ? summary.completedTransactions
+      : completedTransactions;
+
+  const effectivePending =
+    typeof summary?.pendingTransactions === "number"
+      ? summary.pendingTransactions
+      : pendingTransactions;
+
+  const effectiveFailed =
+    typeof summary?.failedTransactions === "number"
+      ? summary.failedTransactions
+      : failedTransactions;
 
   const data = [
     {
-      name: "Nigerians",
-      value: stats.transactionOverview.nigerians,
+      name: "Completed",
+      value: effectiveCompleted,
       color: "#0d9488",
     },
     {
-      name: "Ghanians",
-      value: stats.transactionOverview.ghanians,
+      name: "Pending",
+      value: effectivePending,
       color: "#f97316",
     },
-  ];
+    {
+      name: "Failed",
+      value: effectiveFailed,
+      color: "#ef4444",
+    },
+  ].filter((item) => item.value > 0);
 
-  const total = stats.transactionOverview.total;
+  const total = effectivePending + effectiveCompleted + effectiveFailed;
 
   return (
     <div className="bg-white rounded-2xl p-6">
@@ -27,10 +88,16 @@ export function TransactionOverview() {
         <h3 className="text-lg font-semibold text-gray-900">
           Transaction Overview
         </h3>
-        <select className="border border-gray-300 rounded-2xl px-3 py-1 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
-          <option>Monthly</option>
-          <option>Weekly</option>
-          <option>Daily</option>
+        <select
+          value={selectedPeriod}
+          onChange={(e) =>
+            setSelectedPeriod(e.target.value as "Monthly" | "Weekly" | "Daily")
+          }
+          className="border border-gray-300 rounded-2xl px-3 py-1 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+        >
+          <option value="Monthly">Monthly</option>
+          <option value="Weekly">Weekly</option>
+          <option value="Daily">Daily</option>
         </select>
       </div>
 

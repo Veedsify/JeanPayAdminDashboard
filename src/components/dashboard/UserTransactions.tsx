@@ -1,27 +1,88 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import { useDashboardStore } from "@/store/dashboard";
+import { useMemo, useState } from "react";
+import useAdminDashboard from "@/data/hooks/AdminDashboardHook";
+import { MonthlyVolume } from "@/types/admin-dashboard";
 
-export function UserTransactions() {
-  const stats = useDashboardStore((state) => state.stats);
+interface UserTransactionsProps {
+  monthlyVolume: MonthlyVolume[];
+}
+
+export function UserTransactions({ monthlyVolume }: UserTransactionsProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<
+    "Today" | "This Week" | "This Month"
+  >("This Month");
+  const { getDashboardOverview } = useAdminDashboard();
+
+  const formatDate = (d: Date) => d.toISOString().slice(0, 10);
+
+  const params = useMemo(() => {
+    const now = new Date();
+    let from = new Date();
+    let to = new Date();
+
+    if (selectedPeriod === "Today") {
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (selectedPeriod === "This Week") {
+      // Last 7 days (inclusive of today)
+      const tmp = new Date(now);
+      tmp.setDate(now.getDate() - 6);
+      from = new Date(tmp.getFullYear(), tmp.getMonth(), tmp.getDate());
+      to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else {
+      // This Month
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+      to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    return { from_date: formatDate(from), to_date: formatDate(to) };
+  }, [selectedPeriod]);
+
+  const overviewQuery = getDashboardOverview(params);
+  const effectiveMonthlyVolume: MonthlyVolume[] =
+    (overviewQuery.data as any)?.data?.monthlyVolume ?? monthlyVolume;
+
+  const depositData = effectiveMonthlyVolume.find(
+    (vol) => vol.direction === "DEPOSIT",
+  ) || {
+    total: 0,
+    count: 0,
+  };
+  const transferData = effectiveMonthlyVolume.find(
+    (vol) => vol.direction === "TRANSFER",
+  ) || {
+    total: 0,
+    count: 0,
+  };
+
+  const totalTransactions = depositData.count + transferData.count;
+  const depositPercentage =
+    totalTransactions > 0
+      ? Math.round((depositData.count / totalTransactions) * 100)
+      : 0;
+  const transferPercentage =
+    totalTransactions > 0
+      ? Math.round((transferData.count / totalTransactions) * 100)
+      : 0;
 
   const data = [
     {
-      name: "Nigerians",
-      value: stats.userTransactions.nigerians.count,
-      percentage: stats.userTransactions.nigerians.percentage,
+      name: "Deposits",
+      value: depositData.count,
+      percentage: depositPercentage,
       color: "#0d9488",
     },
     {
-      name: "Ghanians",
-      value: stats.userTransactions.ghanians.count,
-      percentage: stats.userTransactions.ghanians.percentage,
+      name: "Transfers",
+      value: transferData.count,
+      percentage: transferPercentage,
       color: "#f97316",
     },
   ];
 
-  const total = stats.userTransactions.total;
+  const total = totalTransactions;
 
   return (
     <div className="bg-white rounded-2xl p-6">
@@ -29,10 +90,18 @@ export function UserTransactions() {
         <h3 className="text-lg font-semibold text-gray-900">
           User Transactions
         </h3>
-        <select className="border border-gray-300 rounded-2xl px-3 py-1 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
-          <option>Today</option>
-          <option>This Week</option>
-          <option>This Month</option>
+        <select
+          value={selectedPeriod}
+          onChange={(e) =>
+            setSelectedPeriod(
+              e.target.value as "Today" | "This Week" | "This Month",
+            )
+          }
+          className="border border-gray-300 rounded-2xl px-3 py-1 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+        >
+          <option value="Today">Today</option>
+          <option value="This Week">This Week</option>
+          <option value="This Month">This Month</option>
         </select>
       </div>
 
@@ -76,7 +145,7 @@ export function UserTransactions() {
             </div>
             <div className="text-right">
               <div className="text-sm font-medium text-gray-900">
-                {item.value}
+                {item.value.toLocaleString()}
               </div>
               <div className="text-xs text-gray-500">{item.percentage}%</div>
             </div>

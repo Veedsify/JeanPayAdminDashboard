@@ -8,7 +8,7 @@ export interface DashboardSummary {
 }
 
 export interface MonthlyVolume {
-  direction: "DEPOSIT" | "WITHDRAWAL";
+  direction: "DEPOSIT" | "TRANSFER";
   total: number;
   count: number;
 }
@@ -18,10 +18,10 @@ export interface TransactionWithUser {
   user_id: number;
   amount: number;
   currency: string;
-  status: "PENDING" | "COMPLETED" | "FAILED";
+  status: string;
   transaction_type: string;
   reference: string;
-  direction: "DEPOSIT" | "WITHDRAWAL";
+  direction: string;
   description: string;
   created_at: string;
   payment_type: string;

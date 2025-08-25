@@ -7,26 +7,30 @@ import {
 
 // Get admin dashboard statistics
 async function getAdminDashboardStats(): Promise<DashboardApiResponse> {
-  return axiosClient.post("/admin/dashboard");
+  const response = await axiosClient.post("/admin/dashboard");
+  return response.data;
 }
 
 // Get dashboard overview with date filters
 async function getDashboardOverview(
-  params?: DashboardStatsParams
+  params?: DashboardStatsParams,
 ): Promise<DashboardStatsApiResponse> {
-  return axiosClient.post("/admin/dashboard/overview", params);
+  const response = await axiosClient.post("/admin/dashboard/overview", params);
+  return response.data;
 }
 
 // Get dashboard metrics for specific date range
 async function getDashboardMetrics(
-  params: DashboardStatsParams
+  params: DashboardStatsParams,
 ): Promise<DashboardStatsApiResponse> {
-  return axiosClient.post("/admin/dashboard/metrics", params);
+  const response = await axiosClient.post("/admin/dashboard/metrics", params);
+  return response.data;
 }
 
 // Get real-time dashboard data
 async function getDashboardRealtime(): Promise<DashboardApiResponse> {
-  return axiosClient.get("/admin/dashboard/realtime");
+  const response = await axiosClient.get("/admin/dashboard/realtime");
+  return response.data;
 }
 
 export {

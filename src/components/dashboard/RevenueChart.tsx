@@ -9,30 +9,81 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { useDashboardStore } from "@/store/dashboard";
+import { MonthlyVolume } from "@/types/admin-dashboard";
+import { useState } from "react";
 
-export function RevenueChart() {
-  const { stats, selectedPeriod, setSelectedPeriod } = useDashboardStore();
+interface RevenueChartProps {
+  monthlyVolume: MonthlyVolume[];
+}
 
-  const chartData = stats.revenue.months.map((month, index) => ({
+export function RevenueChart({ monthlyVolume }: RevenueChartProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState(
+    new Date().getFullYear().toString(),
+  );
+
+  const safeVolume = Array.isArray(monthlyVolume) ? monthlyVolume : [];
+  const depositEntry = safeVolume.find(
+    (vol) => vol.direction === "DEPOSIT",
+  ) || {
+    total: 0,
+    count: 0,
+  };
+  const withdrawalEntry = safeVolume.find(
+    (vol) => vol.direction === "TRANSFER",
+  ) || {
+    total: 0,
+    count: 0,
+  };
+  const depositTotal = Number(depositEntry.total) || 0;
+  const withdrawalTotal = Number(withdrawalEntry.total) || 0;
+
+  // Create mock monthly data since we only have current month data
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+  const selectedYear = parseInt(selectedPeriod, 10);
+  const monthIndex = selectedYear === currentYear ? currentMonth : -1;
+  const years = Array.from({ length: 4 }, (_, i) =>
+    (currentYear - i).toString(),
+  );
+
+  const chartData = months.map((month, index) => ({
     month,
-    Income: stats.revenue.income[index],
-    Expenses: stats.revenue.expenses[index],
-    "Net Profit": stats.revenue.netProfit[index],
+    Deposits: index === monthIndex ? depositTotal : 0,
+    Withdrawals: index === monthIndex ? withdrawalTotal : 0,
+    Volume: index === monthIndex ? depositTotal + withdrawalTotal : 0,
   }));
 
   return (
     <div className="bg-white rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Revenue</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Transaction Volume
+        </h3>
         <select
           value={selectedPeriod}
           onChange={(e) => setSelectedPeriod(e.target.value)}
           className="border border-gray-300 rounded-2xl px-3 py-1 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
         >
-          <option value="2027">2027</option>
-          <option value="2026">2026</option>
-          <option value="2025">2025</option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -50,12 +101,20 @@ export function RevenueChart() {
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: "#6b7280" }}
-              tickFormatter={(value) => `${value / 1000}K`}
+              tickFormatter={(value) => `${value}`}
             />
             <Legend wrapperStyle={{ paddingTop: "20px" }} iconType="line" />
             <Line
               type="monotone"
-              dataKey="Income"
+              dataKey="Deposits"
+              stroke="#0d9488"
+              strokeWidth={2}
+              dot={{ fill: "#0d9488", strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="Withdrawals"
               stroke="#f97316"
               strokeWidth={2}
               dot={{ fill: "#f97316", strokeWidth: 2, r: 4 }}
@@ -63,18 +122,11 @@ export function RevenueChart() {
             />
             <Line
               type="monotone"
-              dataKey="Expenses"
+              dataKey="Volume"
               stroke="#6b7280"
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={{ fill: "#6b7280", strokeWidth: 2, r: 4 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="Net Profit"
-              stroke="#0d9488"
-              strokeWidth={2}
-              dot={{ fill: "#0d9488", strokeWidth: 2, r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>

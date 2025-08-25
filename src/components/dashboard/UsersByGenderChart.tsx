@@ -1,17 +1,12 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts";
-import { useDashboardStore } from "@/store/dashboard";
+interface UsersByGenderChartProps {
+  totalUsers?: number;
+}
 
-export function UsersByGenderChart() {
-  const stats = useDashboardStore((state) => state.stats);
-
-  const chartData = stats.usersByGender.months.map((month, index) => ({
-    month,
-    Female: stats.usersByGender.female[index],
-    Male: stats.usersByGender.male[index],
-  }));
-
+export function UsersByGenderChart({
+  totalUsers = 0,
+}: UsersByGenderChartProps) {
   return (
     <div className="bg-white rounded-2xl p-6">
       <div className="flex items-center justify-between mb-6">
@@ -21,9 +16,9 @@ export function UsersByGenderChart() {
           </h3>
           <div className="flex items-center space-x-4 mt-2">
             <span className="text-2xl font-bold text-gray-900">
-              {stats.usersByGender.total.toLocaleString()}
+              {totalUsers.toLocaleString()}
             </span>
-            <span className="text-sm text-gray-500">Total</span>
+            <span className="text-sm text-gray-500">Total Users</span>
           </div>
         </div>
         <select className="border border-gray-300 rounded-2xl px-3 py-1 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none">
@@ -33,46 +28,28 @@ export function UsersByGenderChart() {
         </select>
       </div>
 
-      <div className="flex items-center space-x-6 mb-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span className="text-sm text-gray-600">Female</span>
+      <div className="h-64 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-400 mb-2">
+            <svg
+              className="w-16 h-16 mx-auto"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+          </div>
+          <p className="text-gray-500 text-sm">Gender analytics coming soon</p>
+          <p className="text-gray-400 text-xs mt-1">
+            User demographics will be available in the next update
+          </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-          <span className="text-sm text-gray-600">Male</span>
-        </div>
-      </div>
-
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} barCategoryGap="20%">
-            <XAxis
-              dataKey="month"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#6b7280" }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#6b7280" }}
-              tickFormatter={(value) => `${value / 1000}K`}
-            />
-            <Bar
-              dataKey="Male"
-              fill="#0d9488"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={40}
-            />
-            <Bar
-              dataKey="Female"
-              fill="#f97316"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={40}
-            />
-          </BarChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );

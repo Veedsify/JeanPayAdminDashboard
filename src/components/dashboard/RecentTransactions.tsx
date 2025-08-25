@@ -1,31 +1,31 @@
 "use client";
 
-import { useDashboardStore } from "@/store/dashboard";
 import { formatDate, formatTime } from "@/lib/utils";
+import { TransactionWithUser } from "@/types/admin-dashboard";
 
-export function RecentTransactions() {
-  const recentTransactions = useDashboardStore(
-    (state) => state.recentTransactions,
-  );
+interface RecentTransactionsProps {
+  transactions: TransactionWithUser[];
+}
 
+export function RecentTransactions({ transactions }: RecentTransactionsProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "completed":
+      case "COMPLETED":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             Completed
           </span>
         );
-      case "in-progress":
+      case "PENDING":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            In Progress
+            Pending
           </span>
         );
-      case "cancelled":
+      case "FAILED":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            Cancelled
+            Failed
           </span>
         );
       default:
@@ -63,35 +63,38 @@ export function RecentTransactions() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {recentTransactions.map((transaction) => (
-              <tr key={transaction.id} className="hover:bg-gray-50">
+            {transactions.map((transaction) => (
+              <tr key={transaction.transaction_id} className="hover:bg-gray-50">
                 <td className="py-4 px-4">
                   <div>
                     <div className="text-sm font-medium text-gray-900">
-                      {transaction.patient}
+                      {transaction.user
+                        ? `${transaction.user.first_name} ${transaction.user.last_name}`
+                        : "Unknown User"}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {transaction.patientId}
+                      {transaction.user?.email || "No email"}
                     </div>
                   </div>
                 </td>
                 <td className="py-4 px-4">
                   <div>
                     <div className="text-sm text-gray-900">
-                      {transaction.treatment}
+                      {transaction.amount.toLocaleString()}{" "}
+                      {transaction.currency}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {transaction.doctor}
+                      {transaction.transaction_type} - {transaction.direction}
                     </div>
                   </div>
                 </td>
                 <td className="py-4 px-4">
                   <div>
                     <div className="text-sm text-gray-900">
-                      {formatDate(transaction.date)}
+                      {formatDate(transaction.created_at)}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {formatTime(transaction.time)}
+                      {formatTime(transaction.created_at)}
                     </div>
                   </div>
                 </td>
