@@ -1,8 +1,8 @@
 "use client";
-
 import { validateUser } from "@/data/funcs/user/UserFuncs";
+import { usePathname, useRouter } from "next/navigation";
 import axiosClient from "@/lib/axios";
-import { useRouter } from "next/navigation";
+
 import {
   createContext,
   useContext,
@@ -47,7 +47,8 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
   clearError: () => void;
-  refreshToken: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  initializeAuth: () => Promise<void>;
 }
 
 // Registration data type
@@ -69,152 +70,157 @@ interface AuthProviderProps {
 
 // Authentication Provider Component
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const pathname = usePathname();
+  const router = useRouter();
+
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
     isLoading: true,
     error: null,
   });
-  const router = useRouter();
 
+  // Listen for logout events from axios interceptor
   useEffect(() => {
-    if (!authState.isAuthenticated && !authState.isLoading) {
+    const handleAuthLogout = () => {
+      console.log("Auth logout event received from axios interceptor");
+      handleLogout();
+    };
+
+    window.addEventListener("auth:logout", handleAuthLogout);
+    return () => {
+      window.removeEventListener("auth:logout", handleAuthLogout);
+    };
+  }, []);
+
+  // Redirect to login if not authenticated (except for public routes)
+  useEffect(() => {
+    const publicRoutes = ["/login"];
+    const isPublicRoute = publicRoutes.some((route) =>
+      pathname.startsWith(route),
+    );
+
+    if (!authState.isAuthenticated && !authState.isLoading && !isPublicRoute) {
       router.push("/login");
     }
-  }, [authState.isAuthenticated, authState.isLoading, router]);
+  }, [authState.isAuthenticated, authState.isLoading, router, pathname]);
 
   const validateUserToken = useCallback(async () => {
     try {
-      // Replace with your API endpoint
+      setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
+
       const response = await validateUser();
-      if (response.data) {
-        const userData = response.data.user;
-        setAuthState({
-          user: userData,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
-      } else {
-        throw new Error("Token validation failed");
+      const userData = response.data.user;
+
+      // Check if user is admin
+      if (!userData.is_admin) {
+        throw new Error("Access denied: Admin privileges required");
       }
-    } catch {
-      setAuthState((prev) => ({
-        ...prev,
+
+      setAuthState({
+        user: userData,
+        isAuthenticated: true,
         isLoading: false,
-        error: "Session expired",
-      }));
+        error: null,
+      });
+
+      return userData;
+    } catch (error: any) {
+      console.error("Token validation failed:", error);
+
+      // Only set error if it's not a 401 (which will be handled by axios interceptor)
+      const errorMessage =
+        error.response?.status === 401
+          ? null
+          : error.message || "Authentication failed";
+
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: errorMessage,
+      });
+
+      throw error;
     }
-  }, [setAuthState]);
+  }, []);
 
   // Initialize auth state on mount
   const initializeAuth = useCallback(async () => {
+    if (typeof window === "undefined") return;
+
     try {
       await validateUserToken();
-      setAuthState((prev) => ({ ...prev, isLoading: false }));
     } catch (error) {
       console.error("Auth initialization error:", error);
-      setAuthState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: "Authentication initialization failed",
-      }));
+      // Don't set loading to false here if it's a 401, let the interceptor handle it
+      if (error instanceof Error && !error.message.includes("401")) {
+        setAuthState((prev) => ({ ...prev, isLoading: false }));
+      }
     }
-  }, [validateUserToken, setAuthState]);
+  }, [validateUserToken]);
 
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
-
-  const logout = async () => {
-    setAuthState((prev) => ({ ...prev, isLoading: true }));
+  // Handle logout (can be called internally or from axios interceptor)
+  const handleLogout = useCallback(async () => {
     try {
-      // Replace with your API endpoint
-      await axiosClient.post("/api/auth/logout", {});
-      router.push("/login");
+      // Call logout API if user is authenticated
+      if (authState.isAuthenticated) {
+        await axiosClient.post("/auth/logout", {});
+      }
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Logout API call failed:", error);
+      // Continue with logout even if API call fails
     } finally {
+      // Reset auth state
       setAuthState({
         user: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
       });
+
+      // Navigate to login
+      router.push("/login");
     }
+  }, [authState.isAuthenticated, router]);
+
+  // Public logout method
+  const logout = async () => {
+    setAuthState((prev) => ({ ...prev, isLoading: true }));
+    await handleLogout();
   };
 
   const updateUser = async (userData: Partial<User>) => {
     setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const token = localStorage.getItem("authToken");
+      // Use axiosClient instead of fetch for consistency
+      const response = await axiosClient.patch("/auth/user", userData);
 
-      if (!token) {
-        throw new Error("No authentication token found");
-      }
-
-      // Replace with your API endpoint
-      const response = await axiosClient.patch("/api/auth/user", userData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.data;
+      const updatedUser = response.data.user;
 
       setAuthState((prev) => ({
         ...prev,
         user: {
           ...prev.user,
-          ...data.user,
-        },
+          ...updatedUser,
+        } as User,
         isLoading: false,
         error: null,
       }));
-    } catch (error) {
+
+      return updatedUser;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Update failed";
+
       setAuthState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : "Update failed",
+        error: errorMessage,
       }));
-      throw error;
-    }
-  };
 
-  const refreshToken = async () => {
-    try {
-      const token = localStorage.getItem("authToken");
-
-      if (!token) {
-        throw new Error("No token to refresh");
-      }
-
-      // Replace with your API endpoint
-      const response = await fetch("/api/auth/refresh", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem("authToken", data.token);
-        setAuthState((prev) => ({
-          ...prev,
-          user: data.user,
-          error: null,
-        }));
-      } else {
-        throw new Error("Token refresh failed");
-      }
-    } catch (error) {
-      await logout();
-      throw error;
+      throw new Error(errorMessage);
     }
   };
 
@@ -222,21 +228,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setAuthState((prev) => ({ ...prev, error: null }));
   };
 
+  const refreshUser = async () => {
+    try {
+      await validateUserToken();
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+      // Don't throw here, let the component handle the error state
+    }
+  };
+
   const contextValue: AuthContextType = {
     ...authState,
     logout,
     updateUser,
     clearError,
-    refreshToken,
+    refreshUser,
+    initializeAuth,
   };
 
-  if (!authState.isAuthenticated && !authState.user) {
-    return null;
-  }
-  if (!authState.user?.is_admin) {
+  // Check if user is not admin and authenticated
+  if (authState.isAuthenticated && !authState.user?.is_admin) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold">Access Denied</h1>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Access Denied
+          </h1>
+          <p className="text-gray-600 mb-4">
+            You don't have admin privileges to access this area.
+          </p>
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     );
   }
@@ -258,4 +285,4 @@ export const useAuthContext = () => {
 };
 
 // Export the context for advanced use cases
-;
+export { AuthContext };
