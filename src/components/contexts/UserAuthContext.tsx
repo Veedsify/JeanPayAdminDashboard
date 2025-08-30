@@ -1,6 +1,6 @@
 "use client";
 import { validateUser } from "@/data/funcs/user/UserFuncs";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import axiosClient from "@/lib/axios";
 
 import {
@@ -72,6 +72,8 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const pathname = usePathname();
   const router = useRouter();
+  const errorParam = useSearchParams().get("error");
+  const messageParam = useSearchParams().get("message");
 
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -101,7 +103,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     if (!authState.isAuthenticated && !authState.isLoading && !isPublicRoute) {
-      router.push("/login");
+      router.push(`/login?error=${errorParam}&message=${messageParam || ""}`);
     }
   }, [authState.isAuthenticated, authState.isLoading, router, pathname]);
 
@@ -126,8 +128,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       return userData;
     } catch (error: any) {
-      console.error("Token validation failed:", error);
-
       // Only set error if it's not a 401 (which will be handled by axios interceptor)
       const errorMessage =
         error.response?.status === 401
@@ -152,7 +152,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await validateUserToken();
     } catch (error) {
-      console.error("Auth initialization error:", error);
       // Don't set loading to false here if it's a 401, let the interceptor handle it
       if (error instanceof Error && !error.message.includes("401")) {
         setAuthState((prev) => ({ ...prev, isLoading: false }));
@@ -180,7 +179,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       // Navigate to login
-      router.push("/login");
+      router.push(`/login?error=${errorParam}&message=${messageParam || ""}`);
     }
   }, [authState.isAuthenticated, router]);
 

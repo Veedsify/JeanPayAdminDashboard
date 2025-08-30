@@ -1,38 +1,37 @@
-# Use a specific version of Bun (e.g., bun:latest)
-FROM oven/bun:1 
+# Use Node.js 22
+FROM node:22-alpine
 
 # Set the working directory
 WORKDIR /app
 
 # Install system dependencies for native module compilation
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     python3 \
-    python3-pip \
-    build-essential \
+    py3-pip \
     make \
     g++ \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/cache/apk/*
 
 # Set Python environment variable for node-gyp
 ENV PYTHON=/usr/bin/python3
 
-# Copy package.json and bun.lockb separately to leverage Docker cache
-COPY package.json bun.lockb* ./
+# Copy package.json and package-lock.json separately to leverage Docker cache
+COPY package.json package-lock.json* ./
 
-# Install dependencies with Bun (equivalent to npm install)
-RUN bun install 
+# Install dependencies with npm
+RUN npm ci --only=production
 
 # Copy the rest of the application code
 COPY . .
 
-# Build the application (if needed, Bun has a different build command)
-RUN bun run build
+# Build the application
+RUN npm run build
 
 # Expose the application port
-EXPOSE 3000
+EXPOSE 3001
 
 # Set default environment variable
 ENV NODE_ENV=production
 
-# Start the application with Bun (equivalent to npm start)
-CMD ["bun", "start"]
+# Start the application
+CMD ["npm", "start"]

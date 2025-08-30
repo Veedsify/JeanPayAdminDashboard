@@ -63,7 +63,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {transactions.map((transaction) => (
+            {transactions?.map((transaction) => (
               <tr key={transaction.transaction_id} className="hover:bg-gray-50">
                 <td className="py-4 px-4">
                   <div>
