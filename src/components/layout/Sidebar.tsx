@@ -10,11 +10,13 @@ import {
   LogOut,
   Menu,
   Settings2Icon,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
+import { logoutUser } from "@/data/funcs/auth/AuthFuncs";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -29,6 +31,7 @@ export function Sidebar({
   mobileOpen,
   onMobileClose,
 }: SidebarProps) {
+  const router = useRouter();
   const location = usePathname();
   const menuItems = [
     {
@@ -56,6 +59,12 @@ export function Sidebar({
       active: location.startsWith("/rates"),
     },
     {
+      icon: Wallet,
+      label: "Payment Accounts",
+      link: "/payment-accounts",
+      active: location.startsWith("/payment-accounts"),
+    },
+    {
       icon: Settings,
       label: "Platform Settings",
       link: "/platform-settings",
@@ -68,6 +77,16 @@ export function Sidebar({
       active: location.startsWith("/settings"),
     },
   ];
+
+  const logOutUser = async () => {
+    try {
+      await logoutUser();
+      router.push("/login");
+    } catch {
+      router.push("/login");
+    }
+  };
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -94,7 +113,7 @@ export function Sidebar({
           "fixed md:relative inset-y-0 left-0 z-50 w-64 transform md:transform-none",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
           // Hide on mobile when closed, always show on desktop
-          mobileOpen ? "flex" : "hidden md:flex"
+          mobileOpen ? "flex" : "hidden md:flex",
         )}
       >
         {/* Header */}
@@ -121,7 +140,7 @@ export function Sidebar({
             <Menu
               className={cn(
                 "w-4 h-4 text-gray-500 transition-transform",
-                collapsed && "rotate-180"
+                collapsed && "rotate-180",
               )}
             />
           </button>
@@ -141,7 +160,7 @@ export function Sidebar({
                     : "w-full space-x-3 px-5 py-5",
                   item.active
                     ? "text-white"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
                 )}
               >
                 {item.active && (
@@ -159,7 +178,10 @@ export function Sidebar({
         </AnimatePresence>
         {/* Logout */}
         <div className="p-4 border-t border-gray-200">
-          <button className="w-full flex cursor-pointer items-center space-x-3 px-3 py-2 rounded-2xl text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+          <button
+            onClick={logOutUser}
+            className="w-full flex cursor-pointer items-center space-x-3 px-3 py-2 rounded-2xl text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          >
             <LogOut className="w-5 h-5 flex-shrink-0" />
             {!collapsed && <span>Logout</span>}
           </button>

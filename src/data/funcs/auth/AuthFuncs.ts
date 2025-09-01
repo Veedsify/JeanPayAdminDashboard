@@ -13,4 +13,7 @@ async function verifyAccount(email: string) {
   return axiosClient.post("/auth/verify", { email });
 }
 
-export { createUser, loginUser, verifyAccount };
+async function logoutUser() {
+  return axiosClient.post("/auth/logout", {});
+}
+export { createUser, loginUser, verifyAccount, logoutUser };

@@ -143,10 +143,6 @@ const PlatformSettingsPage = () => {
               <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
           </AnimatePresence>
-          <SearchInput
-            placeholder="Search Settings"
-            className="w-full md:w-64 ring-1 ring-black/20 rounded-full shadow-none focus:ring-primary border-0 outine-0"
-          />
         </div>
 
         <TabsContent value="general">

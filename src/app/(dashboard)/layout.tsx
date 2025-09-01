@@ -7,6 +7,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/components/contexts/UserAuthContext";
 import InitializeAuthProvider from "@/components/providers/InitializeAuth";
+import { MiniSearchProvider } from "@/store/search";
 
 // const font = Instrument_Sans({
 //   subsets: ["latin"],
@@ -41,9 +42,11 @@ export default function RootLayout({
         />
         <AuthProvider>
           <InitializeAuthProvider>
-            <DashboardLayout>
-              <Providers>{children}</Providers>
-            </DashboardLayout>
+            <MiniSearchProvider>
+              <DashboardLayout>
+                <Providers>{children}</Providers>
+              </DashboardLayout>
+            </MiniSearchProvider>
           </InitializeAuthProvider>
         </AuthProvider>
       </body>

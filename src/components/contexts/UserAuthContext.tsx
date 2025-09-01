@@ -11,6 +11,7 @@ import {
   ReactNode,
   useCallback,
 } from "react";
+import { error } from "node:console";
 
 // User type definition
 interface User {
@@ -103,7 +104,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     if (!authState.isAuthenticated && !authState.isLoading && !isPublicRoute) {
-      router.push(`/login?error=${errorParam}&message=${messageParam || ""}`);
+      if (errorParam || messageParam) {
+        router.push(
+          `/login${errorParam && `?error=${errorParam}`}${messageParam && `&message=${messageParam || ""}`}`,
+        );
+      }
+      router.push("/login");
     }
   }, [authState.isAuthenticated, authState.isLoading, router, pathname]);
 
@@ -179,7 +185,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       // Navigate to login
-      router.push(`/login?error=${errorParam}&message=${messageParam || ""}`);
+      if (errorParam || messageParam) {
+        router.push(
+          `/login${errorParam && `?error=${errorParam}`}${messageParam && `&message=${messageParam || ""}`}`,
+        );
+      }
+      router.push("/login");
     }
   }, [authState.isAuthenticated, router]);
 
