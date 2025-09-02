@@ -3,7 +3,7 @@
 import { Search, LogOut, Settings, LucideUser, LucideMenu } from "lucide-react";
 import { useState, useRef, useEffect, ChangeEvent } from "react";
 
-import HeaderNotification from "./HeaderNotification";
+// import HeaderNotification from "./HeaderNotification";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuthContext } from "../contexts/UserAuthContext";
@@ -169,7 +169,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           </div>
 
           {/* Notifications */}
-          <HeaderNotification />
+          {/* <HeaderNotification /> */}
 
           {/* User Profile */}
           <div className="flex items-center md:space-x-3 cursor-pointer select-none">
