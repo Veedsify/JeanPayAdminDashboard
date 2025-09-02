@@ -1,7 +1,9 @@
 "use client";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, Suspense, useEffect, useState } from "react";
 import { useAuthContext } from "../contexts/UserAuthContext";
 import { usePathname } from "next/navigation";
+import { LucideLoader } from "lucide-react";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 
 const InitializeAuthProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading, initializeAuth } = useAuthContext();
@@ -16,7 +18,7 @@ const InitializeAuthProvider = ({ children }: { children: ReactNode }) => {
       const publicRoutes = ["/login"];
 
       const isPublicRoute = publicRoutes.some((route) =>
-        pathname.startsWith(route),
+        pathname.startsWith(route)
       );
 
       try {
@@ -45,7 +47,7 @@ const InitializeAuthProvider = ({ children }: { children: ReactNode }) => {
   const publicRoutes = ["/login"];
 
   const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route),
+    pathname.startsWith(route)
   );
 
   // For public routes, always render children regardless of auth status
@@ -61,12 +63,14 @@ const InitializeAuthProvider = ({ children }: { children: ReactNode }) => {
   // If not authenticated and not on public route, show loader
   // (user will be redirected by the auth context)
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground">Redirecting...</p>
+    <Suspense fallback={<LoadingSpinner />}>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <LucideLoader className="animate-spin rounded-full h-12 w-12" />
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
       </div>
-    </div>
+    </Suspense>
   );
 };
 

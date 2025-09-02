@@ -3,6 +3,7 @@ import "@fontsource-variable/host-grotesk";
 
 import { Providers } from "@/components/providers/Providers";
 import { AuthProvider } from "@/components/contexts/UserAuthContext";
+import { Suspense } from "react";
 
 export default function LoginLayout({
   children,
@@ -12,9 +13,11 @@ export default function LoginLayout({
   return (
     <html lang="en">
       <body className="font-sans antialiased bg-gray-50">
-        <AuthProvider>
-          <Providers>{children}</Providers>
-        </AuthProvider>
+        <Suspense>
+          <AuthProvider>
+            <Providers>{children}</Providers>
+          </AuthProvider>
+        </Suspense>
       </body>
     </html>
   );

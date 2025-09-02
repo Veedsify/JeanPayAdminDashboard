@@ -8,6 +8,8 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/components/contexts/UserAuthContext";
 import InitializeAuthProvider from "@/components/providers/InitializeAuth";
 import { MiniSearchProvider } from "@/store/search";
+import { Suspense } from "react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 // const font = Instrument_Sans({
 //   subsets: ["latin"],
@@ -40,15 +42,17 @@ export default function RootLayout({
             },
           }}
         />
-        <AuthProvider>
-          <InitializeAuthProvider>
-            <MiniSearchProvider>
-              <DashboardLayout>
-                <Providers>{children}</Providers>
-              </DashboardLayout>
-            </MiniSearchProvider>
-          </InitializeAuthProvider>
-        </AuthProvider>
+        <Suspense fallback={<LoadingSpinner />}>
+          <AuthProvider>
+            <InitializeAuthProvider>
+              <MiniSearchProvider>
+                <DashboardLayout>
+                  <Providers>{children}</Providers>
+                </DashboardLayout>
+              </MiniSearchProvider>
+            </InitializeAuthProvider>
+          </AuthProvider>
+        </Suspense>
       </body>
     </html>
   );
