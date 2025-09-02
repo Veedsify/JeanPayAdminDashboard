@@ -1,37 +1,23 @@
-# Use Node.js 22
-FROM node:22-alpine
+# Use the official Bun image as the base
+FROM oven/bun:latest
 
-# Set the working directory
-WORKDIR /app
+# Set the working directory inside the container
+WORKDIR /usr/src/app
 
-# Install system dependencies for native module compilation
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    make \
-    g++ \
-    && rm -rf /var/cache/apk/*
+# Copy package.json and bun.lockb to install dependencies
+COPY package.json bun.lockb ./
 
-# Set Python environment variable for node-gyp
-ENV PYTHON=/usr/bin/python3
+# Install project dependencies
+RUN bun install
 
-# Copy package.json and package-lock.json separately to leverage Docker cache
-COPY package.json package-lock.json* ./
-
-# Install dependencies with npm
-RUN npm ci --only=production
-
-# Copy the rest of the application code
+# Copy the rest of your application code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN bun run build
 
-# Expose the application port
+# Expose the port your application listens on (if applicable)
 EXPOSE 3001
 
-# Set default environment variable
-ENV NODE_ENV=production
-
-# Start the application
-CMD ["npm", "start"]
+# Command to run your application
+CMD ["bun", "run", "start"]
