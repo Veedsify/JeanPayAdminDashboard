@@ -60,6 +60,7 @@ export interface Transaction {
   status: string;
   transaction_type: string;
   reference: string;
+  current_rate: number;
   direction: string;
   description: string;
   payment_type: string;

@@ -160,7 +160,7 @@ const TransactionDetails = () => {
     }
     if (transaction.transaction_type === "deposit") return null;
     return (
-      <div className="mt-6 pt-6 border-t border-gray-200">
+      <div className="pt-6 border-gray-200">
         <p className="text-sm text-gray-500">Receiver Details</p>
         {transaction.payment_type === "bank" && (
           <div className="mt-2 space-y-2">
@@ -316,6 +316,15 @@ const TransactionDetails = () => {
                 </div>
               </div>
             </div>
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-500">
+                Rate At Time Of Transaction
+              </p>
+              <p className="font-semibold mt-1">
+                {transaction.transaction.direction} &nbsp;
+                {transaction.transaction?.current_rate ?? "N/A"}
+              </p>
+            </div>
 
             {transaction.transaction.description && (
               <div className="mt-6 pt-6 border-t border-gray-200">
@@ -325,10 +334,35 @@ const TransactionDetails = () => {
                 </p>
               </div>
             )}
-            {getReceiverDetails(
-              transaction.transaction_details,
-              transaction.transaction,
-            )}
+            <div className="md:flex items-start mt-6 border-t border-gray-300">
+              <div>
+                {getReceiverDetails(
+                  transaction.transaction_details,
+                  transaction.transaction,
+                )}
+              </div>
+              {transaction.transaction_details &&
+                transaction.transaction_details.to_currency &&
+                transaction.transaction_details.to_amount && (
+                  <div className="mt-6 md:ml-8 border-gray-200">
+                    <p className="text-sm text-gray-500">Receiver Amount</p>
+                    <div className="mt-2">
+                      <p className="font-semibold text-lg">
+                        {formatAmount(
+                          transaction.transaction_details.to_amount,
+                          GetCurrencySymbol(
+                            transaction.transaction_details.to_currency,
+                          ),
+                        )}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Amount to be received in{" "}
+                        {transaction.transaction_details.to_currency}
+                      </p>
+                    </div>
+                  </div>
+                )}
+            </div>
           </div>
 
           {/* Admin Actions */}

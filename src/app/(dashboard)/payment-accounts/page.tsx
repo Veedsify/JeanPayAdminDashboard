@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -27,6 +27,7 @@ import {
 } from "@/data/funcs/adminPaymentAccounts/AdminPaymentAccountsFuncs";
 import { debounce } from "lodash";
 import { Button } from "@/components/ui/Button";
+import { form } from "framer-motion/m";
 
 // Input Component
 const Input = React.memo(
@@ -142,18 +143,35 @@ const PaymentAccountModal = React.memo(
       data: CreatePaymentAccountRequest | UpdatePaymentAccountRequest,
     ) => void;
   }) => {
-    const [formData, setFormData] = useState({
-      ID: account?.ID,
-      currency: account?.currency || "NGN",
-      account_type: account?.account_type || "bank",
-      account_name: account?.account_name || "",
-      account_number: account?.account_number || "",
-      bank_name: account?.bank_name || "",
-      bank_code: account?.bank_code || "",
-      phone_number: account?.phone_number || "",
-      network: account?.network || "",
-      notes: account?.notes || "",
+    const [formData, setFormData] = useState<
+      CreatePaymentAccountRequest | UpdatePaymentAccountRequest
+    >({
+      currency: "NGN",
+      account_type: "bank",
+      account_name: "",
+      account_number: "",
+      bank_name: "",
+      bank_code: "",
+      phone_number: "",
+      network: "",
+      notes: "",
     });
+
+    useEffect(() => {
+      if (account) {
+        setFormData({
+          currency: account?.currency ?? "NGN",
+          account_type: account?.account_type ?? "bank",
+          account_name: account?.account_name ?? "",
+          account_number: account?.account_number ?? "",
+          bank_name: account?.bank_name ?? "",
+          bank_code: account?.bank_code ?? "",
+          phone_number: account?.phone_number ?? "",
+          network: account?.network ?? "",
+          notes: account?.notes ?? "",
+        });
+      }
+    }, [account]);
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
@@ -639,7 +657,7 @@ export default function PaymentAccountsPage() {
                       <StatusBadge isActive={account.is_active} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(account.created_at).toLocaleDateString()}
+                      {new Date(account.CreatedAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center gap-2 justify-end">

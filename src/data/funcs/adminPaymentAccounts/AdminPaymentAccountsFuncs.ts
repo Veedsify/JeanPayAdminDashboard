@@ -3,7 +3,7 @@ import axiosClient from "@/lib/axios";
 export interface PaymentAccount {
   ID: number;
   currency: string;
-  account_type: "bank" | "momo";
+  account_type?: "bank" | "momo";
   account_name: string;
   account_number?: string;
   bank_name?: string;
@@ -11,9 +11,8 @@ export interface PaymentAccount {
   phone_number?: string;
   network?: string;
   is_active: boolean;
-  created_by: string;
+  CreatedAt: string;
   notes: string;
-  created_at: string;
   updated_at: string;
 }
 

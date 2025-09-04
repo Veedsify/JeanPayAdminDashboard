@@ -11,7 +11,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { debounce } from "lodash";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -28,10 +28,73 @@ import { ExchangeRate } from "@/types/admin-rates";
 import useAdminRates, {
   useRatesInfiniteQuery,
 } from "@/data/hooks/AdminRatesHook";
+import { UpdateRateRequest } from "@/types/admin-rates";
 import { AxiosError } from "axios";
 import toast from "react-hot-toast";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { SelectBox } from "@/components/ui/Select";
+import { Edit, Trash2 } from "lucide-react";
+// Simple dropdown menu component
+const SimpleDropdown = React.memo(
+  ({
+    children,
+    trigger,
+  }: {
+    children: React.ReactNode;
+    trigger: React.ReactNode;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, []);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
+        {isOpen && (
+          <div className="absolute right-0 z-50 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200">
+            <div className="py-1">{children}</div>
+          </div>
+        )}
+      </div>
+    );
+  },
+);
+SimpleDropdown.displayName = "SimpleDropdown";
+
+const DropdownItem = ({
+  children,
+  onClick,
+  className,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+}) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+      className,
+    )}
+  >
+    {children}
+  </button>
+);
 
 // Input component
 const Input = React.forwardRef<
@@ -302,10 +365,176 @@ const NewRateModal = React.memo(({ onClose }: { onClose: () => void }) => {
 });
 NewRateModal.displayName = "NewRateModal";
 
+// Edit rate modal component
+const EditRateModal = React.memo(
+  ({ rate, onClose }: { rate: ExchangeRate; onClose: () => void }) => {
+    const [data, setData] = useState<UpdateRateRequest>({
+      rate: rate.rate,
+      active: rate.active,
+    });
+    const [error, setError] = useState("");
+    const { updateRate, toggleRateStatus } = useAdminRates();
+
+    const handleInputChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+        setData((prev) => ({
+          ...prev,
+          [name]:
+            type === "checkbox"
+              ? (e.target as HTMLInputElement).checked
+              : name === "rate"
+                ? Number(value)
+                : value,
+        }));
+      },
+      [],
+    );
+
+    const handleSubmit = useCallback(
+      async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+          setError("");
+          updateRate.mutate(
+            { id: rate.id, data },
+            {
+              onSuccess: () => {
+                toast.success("Rate updated successfully");
+                onClose();
+              },
+              onError: (error: Error) => {
+                const axiosError = error as AxiosError<{ message: string }>;
+                const errorMessage =
+                  axiosError?.response?.data?.message || error.message;
+                toast.error(errorMessage);
+                setError(errorMessage);
+              },
+            },
+          );
+        } catch (error) {
+          console.error("Error updating rate:", error);
+          setError("An unexpected error occurred");
+        }
+      },
+      [data, updateRate, rate.id, onClose],
+    );
+
+    const ratePreview = useMemo(() => {
+      if (!data.rate) return null;
+
+      const rateValue = Number(data.rate);
+      if (isNaN(rateValue)) return null;
+
+      return `${GetCurrencySymbol(rate.from_currency)} 1 = ${GetCurrencySymbol(
+        rate.to_currency,
+      )} ${rateValue.toLocaleString(undefined, {
+        minimumFractionDigits: 5,
+        maximumFractionDigits: 8,
+      })}`;
+    }, [data.rate, rate.from_currency, rate.to_currency]);
+
+    return (
+      <motion.div
+        className="fixed inset-0 flex items-center justify-center z-50 bg-black/30"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+          transition={{ duration: 0.3 }}
+          className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Edit Rate</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 cursor-pointer"
+            >
+              <X />
+            </button>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="rate"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Rate
+              </label>
+              <input
+                type="text"
+                id="rate"
+                name="rate"
+                onChange={handleInputChange}
+                value={data.rate || ""}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent"
+                placeholder="Enter rate"
+                required
+              />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="active"
+                name="active"
+                onChange={handleInputChange}
+                checked={data.active || false}
+                className="mr-2"
+              />
+              <label
+                htmlFor="active"
+                className="text-sm font-medium text-gray-700"
+              >
+                Active
+              </label>
+            </div>
+
+            {ratePreview && (
+              <p className="text-sm text-gray-500">
+                Updated Rate: {ratePreview}
+              </p>
+            )}
+
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
+            <Button
+              type="submit"
+              disabled={updateRate.isPending}
+              className="w-full bg-secondary hover:bg-secondary/90 text-white font-semibold rounded-xl"
+            >
+              {updateRate.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Rate"
+              )}
+            </Button>
+          </form>
+        </motion.div>
+      </motion.div>
+    );
+  },
+);
+EditRateModal.displayName = "EditRateModal";
+
 // Main component
 export default function RatesPage() {
   const [addRateModalOpen, setAddRateModalOpen] = useState(false);
+  const [editRateModalOpen, setEditRateModalOpen] = useState(false);
+  const [selectedRate, setSelectedRate] = useState<ExchangeRate | null>(null);
   const [search, setSearch] = useState("");
+  const { deleteRate, toggleRateStatus } = useAdminRates();
 
   const {
     data,
@@ -331,6 +560,57 @@ export default function RatesPage() {
   const handleAddRateModalToggle = useCallback(() => {
     setAddRateModalOpen((prev) => !prev);
   }, []);
+
+  const handleEditRate = useCallback((rate: ExchangeRate) => {
+    setSelectedRate(rate);
+    setEditRateModalOpen(true);
+  }, []);
+
+  const handleEditRateModalClose = useCallback(() => {
+    setEditRateModalOpen(false);
+    setSelectedRate(null);
+  }, []);
+
+  const handleDeleteRate = useCallback(
+    (rate: ExchangeRate) => {
+      if (window.confirm(`Are you sure you want to delete this rate?`)) {
+        deleteRate.mutate(rate.id, {
+          onSuccess: () => {
+            toast.success("Rate deleted successfully");
+          },
+          onError: (error: Error) => {
+            const axiosError = error as AxiosError<{ message: string }>;
+            const errorMessage =
+              axiosError?.response?.data?.message || error.message;
+            toast.error(errorMessage);
+          },
+        });
+      }
+    },
+    [deleteRate],
+  );
+
+  const handleToggleStatus = useCallback(
+    (rate: ExchangeRate) => {
+      toggleRateStatus.mutate(
+        { id: rate.id, active: !rate.active },
+        {
+          onSuccess: () => {
+            toast.success(
+              `Rate ${!rate.active ? "activated" : "deactivated"} successfully`,
+            );
+          },
+          onError: (error: Error) => {
+            const axiosError = error as AxiosError<{ message: string }>;
+            const errorMessage =
+              axiosError?.response?.data?.message || error.message;
+            toast.error(errorMessage);
+          },
+        },
+      );
+    },
+    [toggleRateStatus],
+  );
 
   const { ngnRate, ghsRate, ratesData } = useMemo(() => {
     const ngn_rate = data?.pages[0]?.data?.find(
@@ -454,7 +734,7 @@ export default function RatesPage() {
           </div>
         </div>
 
-        <div className="space-y-4 bg-white p-6 rounded-2xl">
+        <div className="space-y-4 bg-white  p-6 rounded-2xl">
           {isLoading ? (
             <LoadingSkeleton />
           ) : ratesData.length === 0 ? (
@@ -467,7 +747,7 @@ export default function RatesPage() {
             />
           ) : (
             <>
-              <Table>
+              <Table className="min-h-[50vh]">
                 <TableHeader className="bg-white">
                   <TableRow>
                     <TableHead className="w-[50px]">
@@ -493,6 +773,7 @@ export default function RatesPage() {
                         Status <ArrowUpDown className="ml-2 h-4 w-4" />
                       </div>
                     </TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="bg-white">
@@ -514,6 +795,43 @@ export default function RatesPage() {
                             rate.status as "Active" | "Inactive" | "Pending"
                           }
                         />
+                      </TableCell>
+                      <TableCell>
+                        <SimpleDropdown
+                          trigger={
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          }
+                        >
+                          <DropdownItem onClick={() => handleEditRate(rate)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownItem>
+                          <DropdownItem
+                            onClick={() => handleToggleStatus(rate)}
+                          >
+                            {rate.active ? (
+                              <>
+                                <MinusCircle className="mr-2 h-4 w-4" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownItem>
+                          <DropdownItem
+                            onClick={() => handleDeleteRate(rate)}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownItem>
+                        </SimpleDropdown>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -550,6 +868,12 @@ export default function RatesPage() {
       <AnimatePresence>
         {addRateModalOpen && (
           <NewRateModal onClose={handleAddRateModalToggle} />
+        )}
+        {editRateModalOpen && selectedRate && (
+          <EditRateModal
+            rate={selectedRate}
+            onClose={handleEditRateModalClose}
+          />
         )}
       </AnimatePresence>
     </div>

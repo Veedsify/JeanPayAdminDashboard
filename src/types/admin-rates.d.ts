@@ -40,7 +40,7 @@ export interface CreateRateRequest {
 export interface UpdateRateRequest {
   rate?: number;
   source?: string;
-  active?: boolean;
+  active?: boolean | null;
 }
 
 export interface RateQueryParams {

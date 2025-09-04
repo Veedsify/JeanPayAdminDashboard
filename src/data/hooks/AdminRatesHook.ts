@@ -1,6 +1,23 @@
-import { useQuery, useMutation, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { getAllRates, getRateHistory, getCurrentRate, addRate } from "../funcs/adminRates/AdminRatesFuncs";
-import { ExchangeRate, RateQueryParams } from "@/types/admin-rates";
+import {
+  useQuery,
+  useMutation,
+  useInfiniteQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  getAllRates,
+  getRateHistory,
+  getCurrentRate,
+  addRate as addRateFunc,
+  updateRate as updateRateFunc,
+  deleteRate as deleteRateFunc,
+  toggleRateStatus as toggleRateStatusFunc,
+} from "../funcs/adminRates/AdminRatesFuncs";
+import {
+  ExchangeRate,
+  RateQueryParams,
+  UpdateRateRequest,
+} from "@/types/admin-rates";
 
 // Separate hook for infinite rates query
 export function useRatesInfiniteQuery(params?: RateQueryParams) {
@@ -53,7 +70,39 @@ export default function useAdminRates() {
 
   // Add new rate
   const addRateMutation = useMutation({
-    mutationFn: async (data: ExchangeRate) => addRate(data),
+    mutationFn: async (data: ExchangeRate) => addRateFunc(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "rates"],
+      });
+    },
+  });
+
+  // Update rate
+  const updateRateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: UpdateRateRequest }) =>
+      updateRateFunc(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "rates"],
+      });
+    },
+  });
+
+  // Delete rate
+  const deleteRateMutation = useMutation({
+    mutationFn: async (id: number) => deleteRateFunc(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "rates"],
+      });
+    },
+  });
+
+  // Toggle rate status
+  const toggleRateStatusMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: number; active: boolean }) =>
+      toggleRateStatusFunc(id, active),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["admin", "rates"],
@@ -73,6 +122,9 @@ export default function useAdminRates() {
 
   return {
     addRate: addRateMutation,
+    updateRate: updateRateMutation,
+    deleteRate: deleteRateMutation,
+    toggleRateStatus: toggleRateStatusMutation,
     refreshRates: refreshRatesMutation,
   };
 }
